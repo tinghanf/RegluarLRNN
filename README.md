@@ -4,6 +4,7 @@ PyTorch implementation of the paper [Advancing Regular Language Reasoning in Lin
 
 ## Installation
 * torch >= 2.0 since we used [torch.compile](https://pytorch.org/tutorials/intermediate/torch_compile_tutorial.html)
+* If torch.compile doesn't work, remove the line of torch.compile in arithmetic.py, pair.py or cycle.py
 * That's it!
 
 

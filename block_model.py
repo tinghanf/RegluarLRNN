@@ -25,6 +25,27 @@ class BlockModel(nn.Module):
         
         self.a0 = nn.Parameter( torch.randn(1, h, block_dim) )
 
+    def get_hidden_with_v(self, x):
+        bs, seq_len = x.shape[0], x.shape[1]
+        h = self.emb_dim//self.block_dim
+        blocks = self.gen_block(x)
+        blocks = blocks.view(bs, seq_len, h, self.block_dim, self.block_dim)
+        blocks = blocks - blocks.mean(dim=-2, keepdim=True)
+        #blocks = blocks / (blocks.norm(dim=-2, keepdim=True).max(dim=-1, keepdim=True)[0])
+        blocks = blocks / (blocks.norm(dim=-2, p=1.2, keepdim=True).max(dim=-1, keepdim=True)[0])
+        
+        v = self.gen_value(x).view(bs, seq_len, h, self.block_dim)
+
+        a = self.a0.expand(bs, -1, -1) # (bs, h, block_dim)
+        all_a = []
+        for i in range(seq_len):
+            a = torch.einsum('bhij,bhj->bhi', blocks[:,i], a) + v[:,i]
+            all_a.append(a.view(bs, 1, self.emb_dim))
+         
+        a = torch.cat(all_a, dim=1)
+        
+        return a
+
     def get_hidden_with_v_and_pscan(self, x):
         def scan(a, As):
             c = As.shape[2]*2
